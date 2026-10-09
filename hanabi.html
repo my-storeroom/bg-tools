@@ -1,0 +1,549 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HANABI Memo</title>
+<style>
+* { box-sizing: border-box; }
+
+:root {
+  --bg: #17212b;
+  --panel: #243340;
+  --line: #405362;
+  --text: #f4f7fa;
+  --yellow: #f5cf68;
+}
+
+body {
+  margin: 0;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, sans-serif;
+}
+
+.app {
+  height: 100%;
+  display: grid;
+  grid-template-rows: 24% 46% 30%;
+  padding:
+    env(safe-area-inset-top, 0px)
+    10px
+    env(safe-area-inset-bottom, 0px);
+  gap: 6px;
+}
+
+section {
+  min-height: 0;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  min-height: 28px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+button {
+  border: 1px solid var(--line);
+  background: #344958;
+  color: white;
+  border-radius: 7px;
+  padding: 5px 9px;
+  font-size: 11px;
+  min-height: 29px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:active { opacity: .7; }
+
+button.primary {
+  background: var(--yellow);
+  color: #17212b;
+  border-color: var(--yellow);
+  font-weight: bold;
+}
+
+button:disabled {
+  opacity: .35;
+}
+
+.controls {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.cards {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  min-height: 0;
+}
+
+.card {
+  flex: 1;
+  min-width: 0;
+  max-width: 75px;
+  height: min(100%, 100px);
+  border-radius: 7px;
+  background: #f5f2e9;
+  border: 2px solid #fff;
+  color: #253442;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.number {
+  font-size: clamp(23px, 8vw, 36px);
+  line-height: 1;
+  font-weight: 900;
+}
+
+.color-name {
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.unknown { color: #87919a; }
+
+/* ① 数字と文字を上下反転。カードの位置は変更しない */
+.opponent .cards.number-flipped .number,
+.opponent .cards.number-flipped .color-name {
+  transform: rotate(180deg);
+}
+
+
+/*
+ * ② カード全体を180度回転。
+ * カードの並びも反転するため、左右の端が対応する。
+ */
+.opponent .cards.card-flipped {
+  flex-direction: row-reverse;
+}
+
+.opponent .cards.card-flipped .card {
+  transform: rotate(180deg);
+}
+
+.opponent .card {
+  height: min(100%, 72px);
+}
+
+.own-cards {
+  align-items: stretch;
+}
+
+.own-card {
+  flex: 1;
+  min-width: 0;
+  max-width: 100px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: stretch;
+  padding: 3px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+
+.own-card.selected {
+  border-color: var(--yellow);
+  background: #354654;
+}
+
+.own-card .card {
+  flex: 0 0 66px;
+  width: 100%;
+  max-width: none;
+  height: 66px;
+  cursor: pointer;
+}
+
+.own-card .number { font-size: 29px; }
+
+.own-card .card.selected-card {
+  outline: 3px solid var(--yellow);
+  outline-offset: 1px;
+}
+
+select {
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  padding: 0 1px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: #17232d;
+  color: white;
+  font-size: 12px;
+}
+
+.color-select { font-size: 11px; }
+
+.actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.actions button {
+  flex: 1;
+}
+
+.hint {
+  color: #b9c7d1;
+  font-size: 10px;
+  font-weight: normal;
+}
+
+#memo {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  resize: none;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #17232d;
+  color: white;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+@media (max-height: 600px) {
+  .app { grid-template-rows: 24% 46% 30%; }
+  section { padding: 5px; }
+  .heading { margin-bottom: 3px; min-height: 22px; }
+  .own-card .card { flex-basis: 48px; height: 48px; }
+  .own-card .number { font-size: 24px; }
+  select { height: 27px; font-size: 11px; }
+  .cards { gap: 3px; }
+  button { min-height: 25px; padding: 3px 6px; }
+}
+
+@media (max-width: 350px) {
+  .app { padding-left: 5px; padding-right: 5px; gap: 4px; }
+  section { padding: 5px; }
+  .cards { gap: 2px; }
+  .own-card { padding: 2px; gap: 4px; }
+  .own-card .number { font-size: 23px; }
+  .color-select { font-size: 10px; }
+  .heading { font-size: 12px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- 上段：相手向け -->
+  <section class="opponent">
+    <div class="heading">
+      <span>相手から見る手札</span>
+      <div class="controls">
+        <button id="orientationBtn" class="primary">数字のみ反転</button>
+        <button id="countBtn">5枚</button>
+      </div>
+    </div>
+    <div class="cards number-flipped" id="publicCards"></div>
+  </section>
+
+  <!-- 中段：自分用 -->
+  <section>
+    <div class="heading">
+      <span>自分用の手札</span>
+      <span class="hint" id="selectedLabel">カードを選択</span>
+    </div>
+
+    <div class="cards own-cards" id="ownCards"></div>
+
+    <div class="actions">
+      <button id="shiftBtn" class="primary">カード補充</button>
+      <button id="undoBtn" disabled>やり直す</button>
+      <button id="resetBtn">リセット</button>
+    </div>
+  </section>
+
+  <!-- 下段：自由記述 -->
+  <section>
+    <div class="heading">
+      <span>自由メモ</span>
+      <button id="clearMemo">消去</button>
+    </div>
+    <textarea id="memo"
+      placeholder="ヒント、推理、場の状況など…"></textarea>
+  </section>
+
+</div>
+
+<script>
+const colorList = [
+  { name: "色？", value: "", bg: "#f5f2e9", fg: "#87919a" },
+  { name: "赤", value: "赤", bg: "#e34b4b", fg: "#fff" },
+  { name: "黄", value: "黄", bg: "#e9c84b", fg: "#253442" },
+  { name: "緑", value: "緑", bg: "#48a86a", fg: "#fff" },
+  { name: "青", value: "青", bg: "#4388e8", fg: "#fff" },
+  { name: "白", value: "白", bg: "#f5f2e9", fg: "#253442" }
+];
+
+const numbers = ["", "1", "2", "3", "4", "5"];
+
+const publicCards = document.getElementById("publicCards");
+const ownCards = document.getElementById("ownCards");
+const countBtn = document.getElementById("countBtn");
+const orientationBtn = document.getElementById("orientationBtn");
+const shiftBtn = document.getElementById("shiftBtn");
+const undoBtn = document.getElementById("undoBtn");
+const resetBtn = document.getElementById("resetBtn");
+const selectedLabel = document.getElementById("selectedLabel");
+
+let count = 5;
+
+/*
+ * 表示モード：
+ * "number" = 数字のみ上下反転（初期設定）
+ * "card"   = カード全体を180度回転し、左右も反転
+ */
+let orientationMode = "number";
+
+let selectedIndex = 0;
+let hand = Array.from({ length: count }, newCard);
+
+/* ずらす処理のやり直し履歴。直近2回分だけ保存する。 */
+let undoHistory = [];
+
+function newCard() {
+  return { color: "", number: "" };
+}
+
+function cloneHand(cards) {
+  return cards.map(card => ({ ...card }));
+}
+
+function saveUndo() {
+  undoHistory.push({
+    hand: cloneHand(hand),
+    selectedIndex
+  });
+
+  if (undoHistory.length > 2) {
+    undoHistory.shift();
+  }
+}
+
+function createSelect(items, value, label, change) {
+  const select = document.createElement("select");
+  select.setAttribute("aria-label", label);
+
+  items.forEach(item => {
+    const option = document.createElement("option");
+    option.value = item.value;
+    option.textContent = item.label;
+    option.selected = item.value === value;
+    select.appendChild(option);
+  });
+
+  select.addEventListener("change", () => change(select.value));
+  return select;
+}
+
+function makeCard(index, isOwn) {
+  const data = hand[index];
+  const color = colorList.find(c => c.value === data.color)
+    || colorList[0];
+
+  const card = document.createElement("div");
+  card.className = "card";
+  card.style.background = color.bg;
+  card.style.color = color.fg;
+
+  const number = document.createElement("div");
+  number.className = "number" + (!data.number ? " unknown" : "");
+  number.textContent = data.number || "?";
+
+  const colorName = document.createElement("div");
+  colorName.className = "color-name";
+  colorName.textContent = data.color || "不明";
+
+  card.append(number, colorName);
+
+  if (!isOwn) return card;
+
+  const wrap = document.createElement("div");
+  wrap.className = "own-card";
+  if (selectedIndex === index) wrap.classList.add("selected");
+
+  if (selectedIndex === index) {
+    card.classList.add("selected-card");
+  }
+
+  card.title = "タップして補充対象を選択";
+  card.addEventListener("click", () => {
+    selectedIndex = index;
+    render();
+  });
+
+  const colorSelect = createSelect(
+    colorList.map(c => ({ value: c.value, label: c.name })),
+    data.color,
+    `カード${index + 1}の色`,
+    value => {
+      hand[index].color = value;
+      render();
+    }
+  );
+  colorSelect.className = "color-select";
+
+  const numberSelect = createSelect(
+    numbers.map(n => ({
+      value: n,
+      label: n || "不明"
+    })),
+    data.number,
+    `カード${index + 1}の数字`,
+    value => {
+      hand[index].number = value;
+      render();
+    }
+  );
+
+  wrap.append(card, colorSelect, numberSelect);
+  return wrap;
+}
+
+function render() {
+  publicCards.innerHTML = "";
+  ownCards.innerHTML = "";
+
+  for (let i = 0; i < count; i++) {
+    publicCards.appendChild(makeCard(i, false));
+    ownCards.appendChild(makeCard(i, true));
+  }
+
+  publicCards.classList.toggle(
+    "number-flipped",
+    orientationMode === "number"
+  );
+  publicCards.classList.toggle(
+    "card-flipped",
+    orientationMode === "card"
+  );
+
+  orientationBtn.textContent =
+    orientationMode === "number"
+      ? "数字のみ反転"
+      : "180度回転中";
+
+  countBtn.textContent = count + "枚";
+  selectedLabel.textContent = `選択中：${selectedIndex + 1}枚目`;
+
+  shiftBtn.disabled = count < 1;
+  undoBtn.disabled = undoHistory.length === 0;
+}
+
+/*
+ * 表示切り替え：
+ * 「数字のみ反転」→「カード全体を180度回転」→「数字のみ反転」
+ */
+orientationBtn.addEventListener("click", () => {
+  orientationMode =
+    orientationMode === "number" ? "card" : "number";
+  render();
+});
+
+countBtn.addEventListener("click", () => {
+  count = count === 5 ? 4 : count === 4 ? 3 : 5;
+
+  hand = hand.slice(0, count);
+  while (hand.length < count) hand.push(newCard());
+
+  selectedIndex = Math.min(selectedIndex, count - 1);
+
+  // 枚数変更前の手札には戻らないよう、履歴を消去
+  undoHistory = [];
+
+  render();
+});
+
+shiftBtn.addEventListener("click", () => {
+  if (!hand.length) return;
+
+  /* 変更前の手札と選択位置を保存。最大2回分。 */
+  saveUndo();
+
+  // 選択したカードを取り除く
+  hand.splice(selectedIndex, 1);
+
+  /*
+   * ★★★ 補充位置を変更する場合は、ここを編集 ★★★
+   *
+   * 現在：新しいカードを右端に補充
+   * 下の hand.push(newCard()); が有効な処理です。
+   */
+  hand.push(newCard());
+
+  /*
+   * 左端に補充したい場合：
+   * 1. 上の hand.push(newCard()); をコメントアウトする
+   * 2. 下の hand.unshift(newCard()); のコメントを外す
+   *
+   * hand.unshift(newCard());
+   *
+   * push = 右端に追加
+   * unshift = 左端に追加
+   * 2行を同時に有効にしないでください。
+   */
+
+  selectedIndex = Math.min(selectedIndex, hand.length - 1);
+  render();
+});
+
+/* ずらす処理を直近2回までやり直す */
+undoBtn.addEventListener("click", () => {
+  if (undoHistory.length === 0) return;
+
+  const previous = undoHistory.pop();
+  hand = cloneHand(previous.hand);
+  selectedIndex = previous.selectedIndex;
+
+  render();
+});
+
+resetBtn.addEventListener("click", () => {
+  hand = Array.from({ length: count }, newCard);
+  selectedIndex = 0;
+  undoHistory = [];
+  render();
+});
+
+document.getElementById("clearMemo").addEventListener("click", () => {
+  document.getElementById("memo").value = "";
+});
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ボドゲ便利ツール集</title>
+    <style>
+        :root {
+            --bg-color: #f4f5f7;
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --accent-color: #4f46e5;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin: 0 0 5px 0;
+        }
+        p {
+            font-size: 0.9rem;
+            color: #666;
+            margin: 0;
+        }
+        .menu-container {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .menu-card {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: inherit;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.1s, box-shadow 0.1s;
+            border: 1px solid #e5e7eb;
+        }
+        .menu-card:active {
+            transform: scale(0.98);
+            background-color: #fafafa;
+        }
+        .tool-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-bottom: 5px;
+        }
+        .tool-desc {
+            font-size: 0.85rem;
+            color: #666;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🎲 ボドゲ便利ツール</h1>
+        <p>プレイを快適にするミニツール集</p>
+    </header>
+
+    <main class="menu-container">
+        <!-- 1. 手番決めツールへのリンク -->
+        <a href="hanabi.html" class="menu-card">
+            <div class="tool-title">HANABI用メモ帳</div>
+            <div class="tool-desc">ボードゲーム『HANABI』に使用するメモ帳</div>
+        </a>
+
+        <!-- 2. スコアカウンターへのリンク -->
+        <a href="counter.html" class="menu-card">
+            <div class="tool-title">📊 汎用スコアカウンター</div>
+            <div class="tool-desc">各プレイヤーの点数やライフ、リソースを増減・管理します。</div>
+        </a>
+
+        <!-- 3. タイマーへのリンク -->
+        <a href="timer.html" class="menu-card">
+            <div class="tool-title">⏱️ 手番タイマー</div>
+            <div class="tool-desc">長考を防止するための、複数人対応チェスクロックです。</div>
+        </a>
+    </main>
+
+</body>
+</html>
