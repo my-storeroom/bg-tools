@@ -18,17 +18,30 @@
 
 body {
   margin: 0;
-  height: var(--visible-height, 100dvh);
-  overflow: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-bottom: var(--keyboard-space, 0px);
   background: var(--bg);
   color: var(--text);
   font-family: system-ui, sans-serif;
 }
 
+/* キーボード表示中は、画面に収めようとせず縦にスクロール */
+body.keyboard-open .app {
+  height: auto;
+  grid-template-rows: 150px 250px 240px;
+}
+
 .app {
-  height: 100%;
+  min-height: 0;
+  height: var(--app-height, auto);
   display: grid;
-  grid-template-rows: minmax(0, 24fr) minmax(0, 46fr) minmax(0, 30fr);
+  grid-template-rows:
+    minmax(0, 24fr)
+    minmax(0, 46fr)
+    minmax(0, 30fr);
   padding:
     env(safe-area-inset-top, 0px)
     10px
@@ -150,10 +163,6 @@ button:disabled {
   height: min(100%, 72px);
 }
 
-.opponent .heading {
-  padding-left: 65px;
-}
-
 .own-cards {
   align-items: stretch;
 }
@@ -243,12 +252,14 @@ select {
 
 
 /* 左上の index.html へ戻るボタン */
+
+/* 上段ブロック内の戻るボタン */
 .back-button {
-  position: fixed;
-  top: max(6px, env(safe-area-inset-top, 0px));
-  left: 10px;
-  min-height: 30px;
-  padding: 5px 8px;
+  position: static;
+  flex-shrink: 0;
+  margin: 0;
+  min-height: 28px;
+  padding: 4px 7px;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -257,14 +268,31 @@ select {
   border-radius: 7px;
   background: #344958;
   color: white;
-  font-size: 12px;
+  font-size: 11px;
+  white-space: nowrap;
 }
 
+/* 戻るボタン・見出し・操作ボタンを横一列に配置 */
+
+.opponent .heading {
+  padding-left: 0;
+  justify-content: flex-start;
+  gap: 5px;
+  min-width: 0;
+}
+
+.opponent .heading > span {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.opponent .heading .controls {
+  flex-shrink: 0;
+  margin-left: auto;
+}
 
 @media (max-height: 600px) {
-  .app {
-  grid-template-rows: minmax(0, 24fr) minmax(0, 46fr) minmax(0, 30fr);
-}
   section { padding: 5px; }
   .heading { margin-bottom: 3px; min-height: 22px; }
   .own-card .card { flex-basis: 48px; height: 48px; }
@@ -272,11 +300,6 @@ select {
   select { height: 27px; font-size: 11px; }
   .cards { gap: 3px; }
   button { min-height: 25px; padding: 3px 6px; }
-  .back-button {
-min-height: 25px;
-padding: 3px 6px;
-font-size: 11px;
-}
 }
 
 @media (max-width: 350px) {
@@ -292,11 +315,11 @@ font-size: 11px;
 </style>
 </head>
 <body>
+<div class="app">
   <!-- 上段：相手向け -->
   <section class="opponent">
-  <a class="back-button" href="index.html">← 戻る</a>
-<div class="app">
     <div class="heading">
+    　<a class="back-button" href="index.html">← 戻る</a>
       <span>相手から見る手札</span>
       <div class="controls">
         <button id="orientationBtn" class="primary">数字のみ反転</button>
@@ -625,26 +648,108 @@ document.getElementById("clearMemo").addEventListener("click", () => {
 });
 
 
-/* キーボード表示時など、実際に見えている画面の高さに合わせる */
-function updateVisibleHeight() {
-  const visibleHeight = window.visualViewport
-    ? window.visualViewport.height
-    : window.innerHeight;
+/* キーボードの有無に応じて表示高さを調整 */
+const root = document.documentElement;
+const app = document.querySelector(".app");
+const backButton = document.querySelector(".back-button");
+const memo = document.getElementById("memo");
 
-  document.documentElement.style.setProperty(
-    "--visible-height",
-    `${visibleHeight}px`
+let memoFocused = false;
+
+// キーボードが開く前の画面高さを記録する
+let maxViewportHeight = Math.max(
+  window.innerHeight,
+  window.visualViewport
+    ? window.visualViewport.height
+    : 0
+);
+
+function updateLayout() {
+  const viewport = window.visualViewport;
+  const layoutHeight = window.innerHeight;
+  const visibleHeight = viewport
+    ? viewport.height
+    : layoutHeight;
+
+  // キーボードが閉じている間は、通常の画面高さを更新
+  if (!memoFocused) {
+    maxViewportHeight = Math.max(
+      maxViewportHeight,
+      layoutHeight,
+      visibleHeight
+    );
+  }
+
+  // メモ欄にフォーカスがあり、画面が大きく縮んだら
+  // キーボード表示中と判断する
+  const keyboardOpen = memoFocused && (
+    layoutHeight < maxViewportHeight - 100 ||
+    visibleHeight < maxViewportHeight - 100
   );
+
+  document.body.classList.toggle(
+    "keyboard-open",
+    keyboardOpen
+  );
+
+  // 画面に重なるキーボードの分だけ、下側にスクロール余白を作る
+  // 画面自体が縮むタイプのブラウザでは、通常この値は0になる
+  const keyboardSpace = viewport
+    ? Math.max(
+        0,
+        layoutHeight - viewport.height - viewport.offsetTop
+      )
+    : 0;
+
+  root.style.setProperty(
+    "--keyboard-space",
+    `${keyboardSpace}px`
+  );
+
+  if (keyboardOpen) {
+    // キーボード表示中は固定の高さに縮めない
+    root.style.setProperty("--app-height", "auto");
+  } else {
+    // キーボードが閉じているときだけ画面内に収める
+    const backHeight = backButton
+      ? backButton.getBoundingClientRect().height + 8
+      : 0;
+
+    root.style.setProperty(
+      "--app-height",
+      `${Math.max(visibleHeight - backHeight, 200)}px`
+    );
+  }
 }
 
-window.addEventListener("resize", updateVisibleHeight);
+window.addEventListener("resize", updateLayout);
 
 if (window.visualViewport) {
-  window.visualViewport.addEventListener("resize", updateVisibleHeight);
-  window.visualViewport.addEventListener("scroll", updateVisibleHeight);
+  window.visualViewport.addEventListener("resize", updateLayout);
+  window.visualViewport.addEventListener("scroll", updateLayout);
 }
 
-updateVisibleHeight();
+memo.addEventListener("focus", () => {
+  memoFocused = true;
+  updateLayout();
+
+  // キーボードが出るまで少し待ってからメモ欄を表示する
+  setTimeout(() => {
+    updateLayout();
+    memo.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest"
+    });
+  }, 250);
+});
+
+memo.addEventListener("blur", () => {
+  memoFocused = false;
+  updateLayout();
+});
+
+updateLayout();
+
 
 render();
 </script>
