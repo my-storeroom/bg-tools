@@ -3,7 +3,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>HANABI Memo</title>
 <style>
 * { box-sizing: border-box; }
@@ -18,8 +18,7 @@
 
 body {
   margin: 0;
-  height: 100vh;
-  height: 100dvh;
+  height: var(--visible-height, 100dvh);
   overflow: hidden;
   background: var(--bg);
   color: var(--text);
@@ -29,7 +28,7 @@ body {
 .app {
   height: 100%;
   display: grid;
-  grid-template-rows: 24% 46% 30%;
+  grid-template-rows: minmax(0, 24fr) minmax(0, 46fr) minmax(0, 30fr);
   padding:
     env(safe-area-inset-top, 0px)
     10px
@@ -151,6 +150,10 @@ button:disabled {
   height: min(100%, 72px);
 }
 
+.opponent .heading {
+  padding-left: 65px;
+}
+
 .own-cards {
   align-items: stretch;
 }
@@ -232,10 +235,37 @@ select {
   font: inherit;
   font-size: 14px;
   line-height: 1.5;
+  overflow-y: auto;
+ -webkit-overflow-scrolling: touch;
+ overscroll-behavior: contain;
+ scroll-padding-bottom: 12px;
 }
 
+
+/* 左上の index.html へ戻るボタン */
+.back-button {
+  position: fixed;
+  top: max(6px, env(safe-area-inset-top, 0px));
+  left: 10px;
+  z-index: 1000;
+  min-height: 30px;
+  padding: 5px 10px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #344958;
+  color: white;
+  font-size: 12px;
+}
+
+
 @media (max-height: 600px) {
-  .app { grid-template-rows: 24% 46% 30%; }
+  .app {
+  grid-template-rows: minmax(0, 24fr) minmax(0, 46fr) minmax(0, 30fr);
+}
   section { padding: 5px; }
   .heading { margin-bottom: 3px; min-height: 22px; }
   .own-card .card { flex-basis: 48px; height: 48px; }
@@ -257,6 +287,7 @@ select {
 </style>
 </head>
 <body>
+<a class="back-button" href="index.html">← 戻る</a>
 <div class="app">
 
   <!-- 上段：相手向け -->
@@ -354,6 +385,40 @@ function saveUndo() {
   }
 }
 
+
+/* 色・数字の編集を5秒単位で1つの履歴にまとめる */
+let editTimer = null;
+let editSessionActive = false;
+
+function beginEditSession() {
+  // 編集グループの最初の変更前だけ保存する
+  if (!editSessionActive) {
+    saveUndo();
+    editSessionActive = true;
+  }
+
+  // 操作のたびに5秒の待ち時間をリセット
+  if (editTimer !== null) {
+    clearTimeout(editTimer);
+  }
+
+  editTimer = setTimeout(() => {
+    editSessionActive = false;
+    editTimer = null;
+  }, 5000);
+}
+
+/* 編集グループを終了する */
+function endEditSession() {
+  if (editTimer !== null) {
+    clearTimeout(editTimer);
+    editTimer = null;
+  }
+
+  editSessionActive = false;
+}
+
+
 function createSelect(items, value, label, change) {
   const select = document.createElement("select");
   select.setAttribute("aria-label", label);
@@ -410,7 +475,9 @@ function makeCard(index, isOwn) {
     colorList.map(c => ({ value: c.value, label: c.name })),
     data.color,
     `カード${index + 1}の色`,
+    
     value => {
+      beginEditSession();
       hand[index].color = value;
       render();
     }
@@ -425,10 +492,12 @@ function makeCard(index, isOwn) {
     data.number,
     `カード${index + 1}の数字`,
     value => {
+      beginEditSession();
       hand[index].number = value;
       render();
     }
   );
+
 
   wrap.append(card, colorSelect, numberSelect);
   return wrap;
@@ -475,6 +544,8 @@ orientationBtn.addEventListener("click", () => {
 });
 
 countBtn.addEventListener("click", () => {
+  endEditSession();
+
   count = count === 5 ? 4 : count === 4 ? 3 : 5;
 
   hand = hand.slice(0, count);
@@ -489,6 +560,8 @@ countBtn.addEventListener("click", () => {
 });
 
 shiftBtn.addEventListener("click", () => {
+  endEditSession();
+
   if (!hand.length) return;
 
   /* 変更前の手札と選択位置を保存。最大2回分。 */
@@ -523,6 +596,8 @@ shiftBtn.addEventListener("click", () => {
 
 /* ずらす処理を直近2回までやり直す */
 undoBtn.addEventListener("click", () => {
+  endEditSession();
+
   if (undoHistory.length === 0) return;
 
   const previous = undoHistory.pop();
@@ -533,6 +608,8 @@ undoBtn.addEventListener("click", () => {
 });
 
 resetBtn.addEventListener("click", () => {
+  endEditSession();
+
   hand = Array.from({ length: count }, newCard);
   selectedIndex = 0;
   undoHistory = [];
@@ -542,6 +619,28 @@ resetBtn.addEventListener("click", () => {
 document.getElementById("clearMemo").addEventListener("click", () => {
   document.getElementById("memo").value = "";
 });
+
+
+/* キーボード表示時など、実際に見えている画面の高さに合わせる */
+function updateVisibleHeight() {
+  const visibleHeight = window.visualViewport
+    ? window.visualViewport.height
+    : window.innerHeight;
+
+  document.documentElement.style.setProperty(
+    "--visible-height",
+    `${visibleHeight}px`
+  );
+}
+
+window.addEventListener("resize", updateVisibleHeight);
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", updateVisibleHeight);
+  window.visualViewport.addEventListener("scroll", updateVisibleHeight);
+}
+
+updateVisibleHeight();
 
 render();
 </script>

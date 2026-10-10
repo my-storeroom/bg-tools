@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#17212b">
+<title>HANABI Memo｜使い方</title>
+<style>
+* { box-sizing: border-box; }
+:root {
+  --bg: #17212b;
+  --panel: #243340;
+  --panel-2: #1b2934;
+  --line: #405362;
+  --text: #f4f7fa;
+  --muted: #b9c7d1;
+  --yellow: #f5cf68;
+  --link: #a8d5ff;
+}
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.65;
+}
+a { color: var(--link); }
+button, a { touch-action: manipulation; }
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: max(10px, env(safe-area-inset-top)) 14px 10px;
+  background: rgba(23, 33, 43, .96);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(10px);
+}
+.back-link, .primary-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #344958;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.primary-link { background: var(--yellow); color: #17212b; border-color: var(--yellow); }
+.brand { min-width: 0; font-weight: 800; font-size: 14px; }
+main { width: min(760px, 100%); margin: 0 auto; padding: 18px 14px calc(34px + env(safe-area-inset-bottom)); }
+.hero {
+  padding: 22px 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: linear-gradient(145deg, #2a3d4b, #243340 65%);
+}
+.eyebrow { color: var(--yellow); font-size: 12px; font-weight: 800; letter-spacing: .08em; }
+h1 { margin: 4px 0 8px; font-size: clamp(25px, 6vw, 36px); line-height: 1.2; }
+h2 { margin: 0 0 10px; font-size: 19px; line-height: 1.35; }
+h3 { margin: 0 0 6px; font-size: 15px; }
+p { margin: 6px 0 0; }
+.lead { color: #e0e8ed; font-size: 14px; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.contents { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 24px; }
+.contents a { padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--text); text-decoration: none; font-size: 12px; background: var(--panel); }
+section.guide-section { margin-top: 20px; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); }
+.step-label { display: inline-block; margin-bottom: 7px; padding: 2px 8px; border-radius: 999px; background: #354958; color: var(--yellow); font-size: 11px; font-weight: 800; }
+.demo { margin-top: 13px; padding: 12px; border: 1px solid #405362; border-radius: 12px; background: var(--panel-2); }
+.demo-title { margin-bottom: 8px; color: var(--muted); font-size: 11px; font-weight: 700; }
+.cards { display: flex; align-items: stretch; justify-content: center; gap: 6px; }
+.playing-card {
+  display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center;
+  min-width: 0; max-width: 76px; min-height: 82px; gap: 3px;
+  border: 2px solid #fff; border-radius: 8px; background: #f5f2e9; color: #253442;
+}
+.playing-card .num { font-size: 28px; line-height: 1; font-weight: 900; }
+.playing-card .color { font-size: 10px; font-weight: 800; }
+.red { background: #e34b4b; color: white; }
+.yellow { background: #e9c84b; color: #253442; }
+.green { background: #48a86a; color: white; }
+.blue { background: #4388e8; color: white; }
+.white { background: #f5f2e9; color: #253442; }
+.demo-controls { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.demo-pill { padding: 5px 8px; border: 1px solid var(--line); border-radius: 7px; background: #344958; font-size: 11px; }
+.demo-pill.active { background: var(--yellow); border-color: var(--yellow); color: #17212b; font-weight: 800; }
+.note { margin-top: 12px; padding: 10px 12px; border-left: 3px solid var(--yellow); border-radius: 0 8px 8px 0; background: #1c2a35; color: #e1e8ed; font-size: 13px; }
+.key { display: inline-block; padding: 1px 6px; border: 1px solid #647582; border-radius: 5px; background: #17212b; font-size: 12px; font-weight: 700; }
+.two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.mini-card { padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); }
+.mini-card p { color: var(--muted); font-size: 12px; }
+.list { padding-left: 1.25em; margin: 8px 0 0; }
+.list li { margin: 5px 0; }
+footer { margin-top: 24px; padding: 18px 8px 4px; text-align: center; color: var(--muted); font-size: 12px; }
+@media (max-width: 420px) {
+  .topbar { padding-left: 9px; padding-right: 9px; gap: 7px; }
+  .brand { font-size: 12px; }
+  .back-link, .primary-link { padding: 6px 9px; font-size: 12px; }
+  main { padding-left: 10px; padding-right: 10px; }
+  .hero, section.guide-section { padding: 15px 12px; }
+  .playing-card { min-height: 70px; }
+  .playing-card .num { font-size: 24px; }
+  .two-col { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="back-link" href="index.html">← トップへ</a>
+  <div class="brand">HANABI Memo｜使い方</div>
+  <a class="primary-link" href="hanabi.html">ツールへ</a>
+</header>
+<main>
+  <div class="hero">
+    <div class="eyebrow">QUICK GUIDE</div>
+    <h1>HANABI Memo の使い方</h1>
+    <p class="lead">自分の手札について分かっている色・数字を記録し、相手に見せる向きや推理メモを整理するための補助ツールです。</p>
+    <div class="hero-actions">
+      <a class="primary-link" href="index.html">HANABI Memo に戻る</a>
+      <a class="back-link" href="#steps">使い方を読む ↓</a>
+    </div>
+  </div>
+
+  <nav class="contents" aria-label="ページ内目次">
+    <a href="#record">① 色・数字の記録</a>
+    <a href="#view">② 相手向け表示</a>
+    <a href="#shift">③ 補充・やり直し</a>
+    <a href="#memo">④ 自由メモ</a>
+    <a href="#tips">⑤ 注意点</a>
+  </nav>
+
+  <div id="steps"></div>
+  <section class="guide-section" id="record">
+    <span class="step-label">STEP 1</span>
+    <h2>色・数字を記録する</h2>
+    <p>中央の「自分用の手札」で、記録したいカードの色と数字を選びます。まだ分からない情報は「色？」や「不明」のままで構いません。</p>
+    <div class="demo" aria-label="カード表示の例">
+      <div class="demo-title">表示例：分かっている情報をカードごとに選択</div>
+      <div class="cards">
+        <div class="playing-card red"><span class="num">2</span><span class="color">赤</span></div>
+        <div class="playing-card yellow"><span class="num">?</span><span class="color">黄</span></div>
+        <div class="playing-card"><span class="num">4</span><span class="color">不明</span></div>
+        <div class="playing-card green"><span class="num">?</span><span class="color">緑</span></div>
+        <div class="playing-card"><span class="num">?</span><span class="color">不明</span></div>
+      </div>
+      <p class="demo-title" style="margin:9px 0 0">例：1枚目は「赤・2」、2枚目は「黄・数字不明」</p>
+    </div>
+    <div class="note">カードの枠をタップすると、そのカードが選択されます。選択中のカードは黄色の枠で表示され、カード補充の対象になります。</div>
+  </section>
+
+  <section class="guide-section" id="view">
+    <span class="step-label">STEP 2</span>
+    <h2>相手から見る手札の表示を切り替える</h2>
+    <p>上段は、記録した手札を相手側から見たときの表示を確認する場所です。「数字のみ反転」ボタンで2つの表示を切り替えます。</p>
+    <div class="two-col">
+      <div class="mini-card">
+        <h3>数字・色名のみ反転</h3>
+        <div class="demo" style="padding:8px">
+          <div class="cards">
+            <div class="playing-card red"><span class="num" style="transform:rotate(180deg)">2</span><span class="color" style="transform:rotate(180deg)">赤</span></div>
+            <div class="playing-card blue"><span class="num" style="transform:rotate(180deg)">4</span><span class="color" style="transform:rotate(180deg)">青</span></div>
+          </div>
+        </div>
+        <p>カードの位置はそのままで、数字と色名だけを上下反転します。</p>
+      </div>
+      <div class="mini-card">
+        <h3>カード全体を180度回転</h3>
+        <div class="demo" style="padding:8px">
+          <div class="cards" style="flex-direction:row-reverse">
+            <div class="playing-card blue" style="transform:rotate(180deg)"><span class="num">4</span><span class="color">青</span></div>
+            <div class="playing-card red" style="transform:rotate(180deg)"><span class="num">2</span><span class="color">赤</span></div>
+          </div>
+        </div>
+        <p>カード全体を回転し、並び順も反転します。左右の端を対応させたいときに使います。</p>
+      </div>
+    </div>
+    <div class="note">ボタンを押すたびに表示が切り替わります。相手に画面を見せる前に、意図した向きになっているか確認してください。</div>
+  </section>
+
+  <section class="guide-section" id="shift">
+    <span class="step-label">STEP 3</span>
+    <h2>カード補充と「やり直す」</h2>
+    <ol class="list">
+      <li>中央の手札から、補充対象にするカードをタップします。</li>
+      <li><span class="key">カード補充</span> を押すと、選んだカードが取り除かれ、新しい空欄カードが追加されます。</li>
+      <li>操作を戻したいときは <span class="key">やり直す</span> を押します。履歴は直近2回分までです。</li>
+    </ol>
+    <div class="demo">
+      <div class="demo-title">操作の流れ（イメージ）</div>
+      <div class="two-col" style="margin-top:0">
+        <div class="mini-card">
+          <h3>① 補充対象を選択</h3>
+          <div class="cards">
+            <div class="playing-card"><span class="num">1</span><span class="color">赤</span></div>
+            <div class="playing-card" style="outline:3px solid #f5cf68"><span class="num">3</span><span class="color">青</span></div>
+            <div class="playing-card"><span class="num">?</span><span class="color">不明</span></div>
+          </div>
+        </div>
+        <div class="mini-card">
+          <h3>② 空欄カードを追加</h3>
+          <div class="cards">
+            <div class="playing-card"><span class="num">1</span><span class="color">赤</span></div>
+            <div class="playing-card"><span class="num">?</span><span class="color">不明</span></div>
+            <div class="playing-card"><span class="num">?</span><span class="color">不明</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="demo-title" style="margin:9px 0 0">実際の補充位置は、ツールのコード設定に従います。</p>
+    </div>
+    <div class="note">「やり直す」は、色・数字の編集とカード補充で共有する履歴です。新しい編集を続けて行った場合、最後の操作から5秒間操作がなければ、その編集グループが1回分として扱われます。</div>
+  </section>
+
+  <section class="guide-section" id="memo">
+    <span class="step-label">STEP 4</span>
+    <h2>自由メモを使う</h2>
+    <p>下段の「自由メモ」には、受け取ったヒント、考えられる色や数字、場に出ているカード、次の手番で確認したいことなどを自由に書けます。</p>
+    <div class="demo">
+      <div class="demo-title">メモの例</div>
+      <p>・青のヒントを受けたカードは候補を絞る</p>
+      <p>・次の手番で数字の情報を確認する</p>
+      <p>・場に出たカードを見て推理を更新する</p>
+    </div>
+    <ul class="list">
+      <li>文章が長いときは、メモ欄の中を上下にスクロールできます。</li>
+      <li><span class="key">消去</span> を押すと、メモ欄の文章がすべて消えます。必要な内容があれば先に確認してください。</li>
+    </ul>
+  </section>
+
+  <section class="guide-section" id="tips">
+    <span class="step-label">TIPS</span>
+    <h2>知っておきたいこと</h2>
+    <ul class="list">
+      <li><strong>このツールはメモ用です。</strong> カードの情報やゲーム状況を自動判定するものではありません。</li>
+      <li><strong>リセット：</strong> 自分用の手札を空欄に戻し、やり直し履歴を消去します。</li>
+      <li><strong>枚数変更：</strong> 「5枚」ボタンで手札表示を5枚・4枚・3枚の間で切り替えます。枚数変更時はやり直し履歴が消去されます。</li>
+      <li><strong>ページを閉じる前に注意：</strong> 現在の作りでは、手札の記録やメモは永続保存されません。再読み込みやページを開き直すと、記録が失われる場合があります。</li>
+      <li><strong>補充位置：</strong> 現在のコード設定では新しい空欄カードは右端に追加されます。左端に変更する場合は、コードの補充処理を編集する必要があります。</li>
+    </ul>
+  </section>
+
+  <div class="hero" style="margin-top:20px; text-align:center">
+    <h2>準備ができたらゲームへ</h2>
+    <p class="lead">HANABI Memoへ戻りしょう。</p>
+    <div class="hero-actions" style="justify-content:center">
+      <a class="primary-link" href="hanabi.html">← HANABI Memo に戻る</a>
+    </div>
+  </div>
+  <footer>HANABI Memo｜使い方ガイド</footer>
+</main>
+</body>
+</html>
