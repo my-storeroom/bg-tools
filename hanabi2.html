@@ -4,7 +4,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>HANABI Memo</title>
 <style>
-*{box-sizing:border-box} :root{--bg:#17212b;--panel:#243340;--line:#405362;--text:#f4f7fa;--yellow:#f5cf68}
+*{
+  box-sizing:border-box
+}
+:root{
+  --bg:#17212b;
+  --panel:#243340;
+  --line:#405362;
+  --text:#f4f7fa;
+  --yellow:#f5cf68
+}
 body{margin:0;min-height:100dvh;overflow-x:hidden;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif}
 .app{height:var(--app-height,100dvh);display:grid;grid-template-rows:minmax(0,24fr) minmax(0,46fr) minmax(0,30fr);padding:env(safe-area-inset-top) 8px env(safe-area-inset-bottom);gap:5px}
 section{min-height:0;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;display:flex;flex-direction:column}
@@ -14,6 +23,9 @@ button.primary{background:var(--yellow);color:#17212b;border-color:var(--yellow)
 .controls{display:flex;gap:3px;align-items:center}.cards{display:flex;justify-content:center;align-items:center;gap:4px;flex:1;min-height:0}
 .card{position:relative;isolation:isolate;flex:1;min-width:0;max-width:75px;height:min(100%,100px);border-radius:6px;background:#f5f2e9;border:2px solid white;color:#253442;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:hidden}
 .card:before{content:"";position:absolute;inset:0;z-index:-1;background:var(--card-bg,#f5f2e9)}
+/* 否定ONは手札にも赤い二重枠と×印で表示 */
+.card.is-negated{border:3px solid #ff4d5a;box-shadow:inset 0 0 0 2px #7f1620,0 0 0 1px #ff4d5a}
+.card.is-negated:after{content:"×";position:absolute;top:1px;right:2px;z-index:2;display:flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#c92f3c;color:#fff;font-size:13px;font-weight:900;line-height:1;text-shadow:0 1px 2px #650b12;pointer-events:none}
 .number{font-size:clamp(20px,7vw,34px);line-height:1;font-weight:900;position:relative;z-index:1;white-space:nowrap}
 .color-name{font-size:10px;font-weight:bold;max-width:100%;overflow:hidden;white-space:nowrap}
 .unknown{color:#87919a}.opponent .cards.number-flipped .number,.opponent .cards.number-flipped .color-name{transform:rotate(180deg)}
@@ -41,8 +53,8 @@ select{width:100%;min-width:0;height:29px;padding:0 1px;border-radius:6px;border
 </style></head><body>
 <div class="app">
 <section class="opponent"><div class="heading"><a class="back-button" href="index.html">← 戻る</a><span>相手から見る手札</span><div class="controls"><button id="orientationBtn" class="primary">数字のみ反転</button><button id="countBtn">5枚</button></div></div><div class="cards number-flipped" id="publicCards"></div></section>
-<section><div class="heading"><span>自分用の手札</span><span class="hint" id="selectedLabel">カードを選択</span></div><div class="cards own-cards" id="ownCards"></div><div class="actions"><button id="shiftBtn" class="primary">カード補充</button><button id="undoBtn" disabled>やり直す</button><button id="redoBtn" disabled>再実行</button><button id="resetBtn">リセット</button></div></section>
-<section><div class="heading"><span>候補メモ</span><button id="clearCandidates">消去</button></div><div class="candidate-grid" id="candidateGrid"></div></section>
+<section><div class="heading"><span>自分用の手札</span><span class="hint" id="selectedLabel">カードを選択</span></div><div class="cards own-cards" id="ownCards"></div><div class="actions"><button id="shiftBtn" class="primary">カード補充</button><button id="undoBtn" disabled>1つ戻る</button><button id="redoBtn" disabled>１つ進む</button><button id="resetBtn">リセット</button></div></section>
+<section><div class="heading"><span>候補メモ</span><div class="controls"><button id="candidateApplyBtn" aria-pressed="true">手札反映：ON</button><button id="clearCandidates">消去</button></div></div><div class="candidate-grid" id="candidateGrid"></div></section>
 </div><div id="pickerPopup" class="picker-popup" hidden role="dialog"></div>
 <script>
 "use strict";
@@ -50,7 +62,7 @@ const colorList=[{name:"色？",value:"",bg:"#e5e2d9",fg:"#87919a"},{name:"赤",
 const numbers=["1","2","3","4","5"];
 const $=id=>document.getElementById(id);
 const publicCards=$("publicCards"),ownCards=$("ownCards"),candidateGrid=$("candidateGrid"),countBtn=$("countBtn"),orientationBtn=$("orientationBtn"),shiftBtn=$("shiftBtn"),undoBtn=$("undoBtn"),redoBtn=$("redoBtn"),resetBtn=$("resetBtn"),selectedLabel=$("selectedLabel"),pickerPopup=$("pickerPopup");
-let count=5,orientationMode="number",selectedIndex=0,hand=Array.from({length:5},newCard),candidates=Array.from({length:5},newCandidate),undoHistory=[],redoHistory=[],editTimer=null,editSessionActive=false,editStartSnapshot=null,animationTick=0,openPicker=null;
+let count=5,orientationMode="number",candidateApplyToOwnHand=true,selectedIndex=0,hand=Array.from({length:5},newCard),candidates=Array.from({length:5},newCandidate),undoHistory=[],redoHistory=[],editTimer=null,editSessionActive=false,editStartSnapshot=null,animationTick=0,openPicker=null;
 function newCard(){return {color:"",number:""}}
 function newCandidate(){return {colors:[],numbers:[],negated:false}}
 function cloneHand(cards){return cards.map(c=>({...c}))}
@@ -70,7 +82,7 @@ function openCandidatePicker(anchor,index,kind){
  const footer=document.createElement("div");footer.className="picker-footer";const clear=document.createElement("button");clear.textContent="全解除";clear.onclick=()=>{if(isColor)c.colors=[];else c.numbers=[];list.querySelectorAll("input").forEach(i=>i.checked=false);updatePickerSummaryButtons();renderHands()};const done=document.createElement("button");done.className="primary";done.textContent="閉じる";done.onclick=closePicker;footer.append(clear,done);pickerPopup.append(title,list,footer);positionPicker(anchor)
 }
 function makeCard(index,isOwn){
- const d=hand[index],c=candidates[index]||newCandidate(),cols=d.color?[d.color]:c.colors,nums=d.number?[d.number]:c.numbers,card=document.createElement("div");card.className="card";
+ const d=hand[index],c=candidates[index]||newCandidate(),applyCandidate=candidateApplyToOwnHand,cols=d.color?[d.color]:(applyCandidate?c.colors:[]),nums=(d.number?[d.number]:(applyCandidate?c.numbers:[])).slice().sort((a,b)=>Number(a)-Number(b)),card=document.createElement("div");card.className="card";if(applyCandidate&&c.negated){card.classList.add("is-negated");card.title="候補メモ：否定ON"}
  let bg="#f5f2e9",fg="#253442";
  if(d.color){const x=colorList.find(v=>v.value===d.color);if(x){bg=x.bg;fg=x.fg}}
  else if(cols.length){const valid=cols.map(v=>colorList.find(x=>x.value===v)).filter(Boolean);if(valid.length===1){bg=valid[0].bg;fg=valid[0].fg}else if(valid.length>1){bg="linear-gradient(to right,"+valid.map((x,i)=>`${x.bg} ${(i/valid.length*100).toFixed(2)}% ${((i+1)/valid.length*100).toFixed(2)}%`).join(",")+")";fg="#17212b"}}
@@ -93,10 +105,11 @@ function renderCandidates(){candidateGrid.innerHTML="";candidateGrid.style.gridT
  candidates.forEach((c,i)=>{const slot=document.createElement("div");slot.className="candidate-slot"+(c.negated?" is-negated":"");const label=document.createElement("div");label.className="candidate-label";label.textContent=(i+1)+"枚目";
  const cb=document.createElement("button");cb.className="candidate-picker";cb.dataset.index=i;cb.dataset.kind="colors";cb.setAttribute("aria-haspopup","dialog");cb.innerHTML='<span class="picker-summary"></span><span class="picker-arrow">▼</span>';cb.querySelector(".picker-summary").textContent=c.colors.length?c.colors.join("・"):"色を選択";cb.onclick=()=>openCandidatePicker(cb,i,"colors");
  const nb=document.createElement("button");nb.className="candidate-picker";nb.dataset.index=i;nb.dataset.kind="numbers";nb.setAttribute("aria-haspopup","dialog");nb.innerHTML='<span class="picker-summary"></span><span class="picker-arrow">▼</span>';nb.querySelector(".picker-summary").textContent=c.numbers.length?c.numbers.join("・"):"数字を選択";nb.onclick=()=>openCandidatePicker(nb,i,"numbers");
- const neg=document.createElement("button");neg.className="negate-btn";neg.textContent=c.negated?"× 否定中":"× 否定";neg.setAttribute("aria-pressed",String(c.negated));neg.onclick=()=>{c.negated=!c.negated;renderCandidates()};slot.append(label,cb,nb,neg);candidateGrid.appendChild(slot)})
+ const neg=document.createElement("button");neg.className="negate-btn";neg.textContent=c.negated?"× 否定中":"× 否定";neg.setAttribute("aria-pressed",String(c.negated));neg.onclick=()=>{c.negated=!c.negated;renderHands();renderCandidates()};slot.append(label,cb,nb,neg);candidateGrid.appendChild(slot)})
 }
 function render(){closePicker();renderHands();renderCandidates()}
 orientationBtn.onclick=()=>{orientationMode=orientationMode==="number"?"card":"number";renderHands()};
+$("candidateApplyBtn").onclick=()=>{candidateApplyToOwnHand=!candidateApplyToOwnHand;const b=$("candidateApplyBtn");b.textContent="手札反映："+(candidateApplyToOwnHand?"ON":"OFF");b.setAttribute("aria-pressed",String(candidateApplyToOwnHand));b.classList.toggle("primary",candidateApplyToOwnHand);renderHands()};
 countBtn.onclick=()=>{endEditSession();count=count===5?4:count===4?3:5;hand=hand.slice(0,count);while(hand.length<count)hand.push(newCard());candidates=candidates.slice(0,count);while(candidates.length<count)candidates.push(newCandidate());undoHistory=[];redoHistory=[];selectedIndex=Math.min(selectedIndex,count-1);render()};
 shiftBtn.onclick=()=>{endEditSession();if(!hand.length)return;saveUndo();hand.splice(selectedIndex,1);hand.push(newCard());candidates.splice(selectedIndex,1);candidates.push(newCandidate());/* 左端補充に変更する場合は push を unshift に変更 */selectedIndex=Math.min(selectedIndex,hand.length-1);render()};
 undoBtn.onclick=()=>{endEditSession();if(!undoHistory.length)return;redoHistory.push({hand:cloneHand(hand),selectedIndex});const p=undoHistory.pop();hand=cloneHand(p.hand);if(p.includesCandidates&&p.candidates)candidates=p.candidates.map(c=>({...c,colors:[...c.colors],numbers:[...c.numbers]}));selectedIndex=p.selectedIndex;render()};
