@@ -1,903 +1,112 @@
-
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>HANABI Memo</title>
 <style>
-* { box-sizing: border-box; }
-
-:root {
-  --bg: #17212b;
-  --panel: #243340;
-  --line: #405362;
-  --text: #f4f7fa;
-  --yellow: #f5cf68;
-}
-
-body {
-  margin: 0;
-  min-height: 100vh;
-  min-height: 100dvh;
-  overflow-x: hidden;
-  overflow-y: auto;
-  padding-bottom: var(--keyboard-space, 0px);
-  background: var(--bg);
-  color: var(--text);
-  font-family: system-ui, sans-serif;
-}
-
-/* キーボード表示中は、画面に収めようとせず縦にスクロール */
-.app {
-  min-height: 0;
-  height: var(--app-height, auto);
-  display: grid;
-  grid-template-rows:
-    minmax(0, 24fr)
-    minmax(0, 46fr)
-    minmax(0, 30fr);
-  padding:
-    env(safe-area-inset-top, 0px)
-    10px
-    env(safe-area-inset-bottom, 0px);
-  gap: 6px;
-}
-
-section {
-  min-height: 0;
-  overflow: hidden;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-}
-
-.heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 5px;
-  min-height: 28px;
-  margin-bottom: 6px;
-  font-size: 13px;
-  font-weight: bold;
-}
-
-button {
-  border: 1px solid var(--line);
-  background: #344958;
-  color: white;
-  border-radius: 7px;
-  padding: 5px 9px;
-  font-size: 11px;
-  min-height: 29px;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-button:active { opacity: .7; }
-
-button.primary {
-  background: var(--yellow);
-  color: #17212b;
-  border-color: var(--yellow);
-  font-weight: bold;
-}
-
-button:disabled {
-  opacity: .35;
-}
-
-.controls {
-  display: flex;
-  gap: 5px;
-  align-items: center;
-}
-
-.cards {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 5px;
-  flex: 1;
-  min-height: 0;
-}
-
-.card {
-  flex: 1;
-  min-width: 0;
-  max-width: 75px;
-  height: min(100%, 100px);
-  border-radius: 7px;
-  background: #f5f2e9;
-  border: 2px solid #fff;
-  color: #253442;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-}
-
-.number {
-  font-size: clamp(23px, 8vw, 36px);
-  line-height: 1;
-  font-weight: 900;
-}
-
-.color-name {
-  font-size: 10px;
-  font-weight: bold;
-}
-
-.unknown { color: #87919a; }
-
-/* ① 数字と文字を上下反転。カードの位置は変更しない */
-.opponent .cards.number-flipped .number,
-.opponent .cards.number-flipped .color-name {
-  transform: rotate(180deg);
-}
-
-
-/*
- * ② カード全体を180度回転。
- * カードの並びも反転するため、左右の端が対応する。
- */
-.opponent .cards.card-flipped {
-  flex-direction: row-reverse;
-}
-
-.opponent .cards.card-flipped .card {
-  transform: rotate(180deg);
-}
-
-.opponent .card {
-  height: min(100%, 72px);
-}
-
-.own-cards {
-  align-items: stretch;
-}
-
-.own-card {
-  flex: 1;
-  min-width: 0;
-  max-width: 100px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  align-items: stretch;
-  padding: 3px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-}
-
-.own-card.selected {
-  border-color: var(--yellow);
-  background: #354654;
-}
-
-.own-card .card {
-  flex: 0 0 66px;
-  width: 100%;
-  max-width: none;
-  height: 66px;
-  cursor: pointer;
-}
-
-.own-card .number { font-size: 29px; }
-
-.own-card .card.selected-card {
-  outline: 3px solid var(--yellow);
-  outline-offset: 1px;
-}
-
-select {
-  width: 100%;
-  min-width: 0;
-  height: 32px;
-  padding: 0 1px;
-  border-radius: 6px;
-  border: 1px solid var(--line);
-  background: #17232d;
-  color: white;
-  font-size: 12px;
-}
-
-.color-select { font-size: 11px; }
-
-.actions {
-  display: flex;
-  gap: 6px;
-  margin-top: 7px;
-}
-
-.actions button {
-  flex: 1;
-}
-
-.hint {
-  color: #b9c7d1;
-  font-size: 10px;
-  font-weight: normal;
-}
-
-.candidate-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 5px;
-  flex: 1;
-  min-height: 0;
-}
-
-.candidate-slot {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
-  gap: 6px;
-  padding: 4px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #1b2934;
-}
-
-.candidate-label {
-  font-size: 11px;
-  text-align: center;
-  color: #b9c7d1;
-}
-
-.candidate-slot select {
-  height: 32px;
-  font-size: 12px;
-}
-
-.candidate-slot .negate-btn {
-  min-height: 32px;
-  padding: 3px;
-  background: #344958;
-}
-
-.candidate-slot.is-negated {
-  border-color: #e56b6b;
-  background: #422d34;
-}
-
-.candidate-slot.is-negated .negate-btn {
-  background: #e56b6b;
-  color: #fff;
-  border-color: #e56b6b;
-  font-weight: bold;
-}
-
-@media (max-width: 350px) {
-  .candidate-grid {
-    gap: 2px;
-  }
-
-  .candidate-slot {
-    padding: 2px;
-    gap: 4px;
-  }
-
-  .candidate-slot select {
-    font-size: 10px;
-    padding: 0;
-  }
-
-  .candidate-slot .negate-btn {
-    font-size: 10px;
-  }
-}
-
-/* 上段ブロック内の戻るボタン */
-.back-button {
-  position: static;
-  flex-shrink: 0;
-  margin: 0;
-  min-height: 28px;
-  padding: 4px 7px;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: #344958;
-  color: white;
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-/* 戻るボタン・見出し・操作ボタンを横一列に配置 */
-
-.opponent .heading {
-  padding-left: 0;
-  justify-content: flex-start;
-  gap: 5px;
-  min-width: 0;
-}
-
-.opponent .heading > span {
-  flex: 0 1 auto;
-  min-width: 0;
-  white-space: nowrap;
-}
-
-.opponent .heading .controls {
-  flex-shrink: 0;
-  margin-left: auto;
-}
-
-@media (max-height: 600px) {
-  section { padding: 5px; }
-  .heading { margin-bottom: 3px; min-height: 22px; }
-  .own-card .number { font-size: 24px; }
-  select { height: 27px; font-size: 11px; }
-  .cards { gap: 3px; }
-  button { min-height: 25px; padding: 3px 6px; }
-}
-
-@media (max-width: 350px) {
-  .app { padding-left: 5px; padding-right: 5px; gap: 4px; }
-  section { padding: 5px; }
-  .cards { gap: 2px; }
-  .own-card { padding: 2px; gap: 4px; }
-  .own-card .number { font-size: 23px; }
-  .color-select { font-size: 10px; }
-  .heading { font-size: 12px; }
-}
-
-</style>
-</head>
-<body>
+*{box-sizing:border-box} :root{--bg:#17212b;--panel:#243340;--line:#405362;--text:#f4f7fa;--yellow:#f5cf68}
+body{margin:0;min-height:100dvh;overflow-x:hidden;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif}
+.app{height:var(--app-height,100dvh);display:grid;grid-template-rows:minmax(0,24fr) minmax(0,46fr) minmax(0,30fr);padding:env(safe-area-inset-top) 8px env(safe-area-inset-bottom);gap:5px}
+section{min-height:0;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;display:flex;flex-direction:column}
+.heading{display:flex;align-items:center;justify-content:space-between;gap:4px;min-height:25px;margin-bottom:4px;font-size:12px;font-weight:bold}
+button{border:1px solid var(--line);background:#344958;color:white;border-radius:7px;padding:4px 6px;font-size:11px;min-height:27px;cursor:pointer;touch-action:manipulation}
+button.primary{background:var(--yellow);color:#17212b;border-color:var(--yellow);font-weight:bold}button:disabled{opacity:.35}
+.controls{display:flex;gap:3px;align-items:center}.cards{display:flex;justify-content:center;align-items:center;gap:4px;flex:1;min-height:0}
+.card{position:relative;isolation:isolate;flex:1;min-width:0;max-width:75px;height:min(100%,100px);border-radius:6px;background:#f5f2e9;border:2px solid white;color:#253442;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:hidden}
+.card:before{content:"";position:absolute;inset:0;z-index:-1;background:var(--card-bg,#f5f2e9)}
+.number{font-size:clamp(20px,7vw,34px);line-height:1;font-weight:900;position:relative;z-index:1;white-space:nowrap}
+.color-name{font-size:10px;font-weight:bold;max-width:100%;overflow:hidden;white-space:nowrap}
+.unknown{color:#87919a}.opponent .cards.number-flipped .number,.opponent .cards.number-flipped .color-name{transform:rotate(180deg)}
+.opponent .cards.card-flipped{flex-direction:row-reverse}.opponent .cards.card-flipped .card{transform:rotate(180deg)}.opponent .card{height:min(100%,72px)}
+.own-cards{align-items:stretch}.own-card{flex:1;min-width:0;max-width:100px;height:100%;display:flex;flex-direction:column;gap:4px;padding:2px;border:1px solid transparent;border-radius:7px}
+.own-card.selected{border-color:var(--yellow);background:#354654}.own-card .card{flex:0 0 62px;width:100%;max-width:none;height:62px;cursor:pointer}.own-card .number{font-size:clamp(19px,5.5vw,27px)}.own-card .selected-card{outline:3px solid var(--yellow);outline-offset:-3px}
+select{width:100%;min-width:0;height:29px;padding:0 1px;border-radius:6px;border:1px solid var(--line);background:#17232d;color:white;font-size:11px}
+.actions{display:flex;gap:4px;margin-top:5px}.actions button{flex:1;min-width:0;padding-left:2px;padding-right:2px;font-size:10px}.hint{color:#b9c7d1;font-size:10px;font-weight:normal}
+.candidate-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;flex:1;min-height:0}
+.candidate-slot{min-width:0;display:flex;flex-direction:column;gap:5px;padding:3px 2px;border:1px solid var(--line);border-radius:7px;background:#1b2934}
+.candidate-slot.is-negated{border-color:#e56b6b;background:#422d34}.candidate-label{font-size:10px;text-align:center;color:#b9c7d1}
+.candidate-picker{width:100%;min-width:0;min-height:31px;padding:3px 2px;display:flex;align-items:center;justify-content:space-between;gap:2px;font-size:9px;overflow:hidden}
+.picker-summary{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.picker-arrow{flex-shrink:0;font-size:8px}
+.candidate-slot .negate-btn{width:100%;min-height:27px;padding:2px;font-size:9px}.candidate-slot.is-negated .negate-btn{background:#e56b6b;border-color:#e56b6b;font-weight:bold}
+.picker-popup{position:fixed;z-index:1000;width:min(230px,calc(100vw - 20px));max-height:min(330px,65vh);overflow-y:auto;padding:9px;background:#17232d;border:1px solid #71899b;border-radius:10px;box-shadow:0 8px 28px #0009}
+.picker-popup[hidden]{display:none}.picker-title{font-size:12px;font-weight:bold;margin-bottom:7px}.picker-list{display:grid;gap:3px}
+.picker-item{display:flex;align-items:center;gap:8px;min-height:35px;padding:5px 7px;border-radius:6px;background:#243340;font-size:13px;cursor:pointer}
+.picker-item input{width:17px;height:17px;margin:0;accent-color:var(--yellow)}.picker-swatch{width:16px;height:16px;flex:0 0 16px;border:1px solid #ffffff66;border-radius:4px}
+.picker-footer{display:flex;gap:6px;margin-top:8px}.picker-footer button{flex:1}
+.back-button{flex-shrink:0;min-height:26px;padding:3px 5px;text-decoration:none;display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:7px;background:#344958;color:white;font-size:10px;white-space:nowrap}
+.opponent .heading{justify-content:flex-start;gap:4px;min-width:0}.opponent .heading>span{font-size:11px;white-space:nowrap}.opponent .heading .controls{flex-shrink:0;margin-left:auto}
+@media(max-width:350px){.app{padding-left:4px;padding-right:4px;gap:3px}section{padding:4px}.cards{gap:2px}.heading{font-size:11px}.opponent .heading>span{font-size:9px}.opponent .controls button{font-size:8px;padding:3px}.back-button{font-size:9px}.own-card .card{flex-basis:55px;height:55px}.own-card .number{font-size:20px}.candidate-grid{gap:2px}.candidate-picker{font-size:8px}.candidate-label{font-size:8px}}
+@media(max-height:600px){section{padding:4px}.heading{min-height:21px;margin-bottom:2px}.own-card .card{flex-basis:48px;height:48px}select{height:25px}.candidate-slot{gap:3px}.candidate-picker{min-height:25px}.candidate-slot .negate-btn{min-height:23px}}
+@media(prefers-reduced-motion:reduce){.number{transition:none!important}}
+</style></head><body>
 <div class="app">
-  <!-- 上段：相手向け -->
-  <section class="opponent">
-    <div class="heading">
-    <a class="back-button" href="index.html">← 戻る</a>
-      <span>相手から見る手札</span>
-      <div class="controls">
-        <button id="orientationBtn" class="primary">数字のみ反転</button>
-        <button id="countBtn">5枚</button>
-      </div>
-    </div>
-    <div class="cards number-flipped" id="publicCards"></div>
-  </section>
-
-  <!-- 中段：自分用 -->
-  <section>
-    <div class="heading">
-      <span>自分用の手札</span>
-      <span class="hint" id="selectedLabel">カードを選択</span>
-    </div>
-
-    <div class="cards own-cards" id="ownCards"></div>
-
-    <div class="actions">
-      <button id="shiftBtn" class="primary">カード補充</button>
-      <button id="undoBtn" disabled>やり直す</button>
-      <button id="redoBtn" disabled>再実行</button>
-      <button id="resetBtn">リセット</button>
-    </div>
-  </section>
-
-  <!-- 下段：自由記述 -->
-  <section>
-    <div class="heading">
-      <span>候補メモ</span>
-      <button id="clearCandidates">消去</button>
-    </div>
-    <div class="candidate-grid" id="candidateGrid"></div>
-  </section>
-
-</div>
-
+<section class="opponent"><div class="heading"><a class="back-button" href="index.html">← 戻る</a><span>相手から見る手札</span><div class="controls"><button id="orientationBtn" class="primary">数字のみ反転</button><button id="countBtn">5枚</button></div></div><div class="cards number-flipped" id="publicCards"></div></section>
+<section><div class="heading"><span>自分用の手札</span><span class="hint" id="selectedLabel">カードを選択</span></div><div class="cards own-cards" id="ownCards"></div><div class="actions"><button id="shiftBtn" class="primary">カード補充</button><button id="undoBtn" disabled>やり直す</button><button id="redoBtn" disabled>再実行</button><button id="resetBtn">リセット</button></div></section>
+<section><div class="heading"><span>候補メモ</span><button id="clearCandidates">消去</button></div><div class="candidate-grid" id="candidateGrid"></div></section>
+</div><div id="pickerPopup" class="picker-popup" hidden role="dialog"></div>
 <script>
-const colorList = [
-  { name: "色？", value: "", bg: "#e5e2d9", fg: "#87919a" },
-  { name: "赤", value: "赤", bg: "#e34b4b", fg: "#fff" },
-  { name: "黄", value: "黄", bg: "#e9c84b", fg: "#253442" },
-  { name: "緑", value: "緑", bg: "#48a86a", fg: "#fff" },
-  { name: "青", value: "青", bg: "#4388e8", fg: "#fff" },
-  { name: "白", value: "白", bg: "#fefefe", fg: "#253442" }
-];
-
-const numbers = ["", "1", "2", "3", "4", "5"];
-
-const publicCards = document.getElementById("publicCards");
-const ownCards = document.getElementById("ownCards");
-const countBtn = document.getElementById("countBtn");
-const orientationBtn = document.getElementById("orientationBtn");
-const shiftBtn = document.getElementById("shiftBtn");
-const undoBtn = document.getElementById("undoBtn");
-const resetBtn = document.getElementById("resetBtn");
-const selectedLabel = document.getElementById("selectedLabel");
-
-let count = 5;
-
-/*
- * 表示モード：
- * "number" = 数字のみ上下反転（初期設定）
- * "card"   = カード全体を180度回転し、左右も反転
- */
-let orientationMode = "number";
-
-let selectedIndex = 0;
-let hand = Array.from({ length: count }, newCard);
-
-// 手札の枚数に対応した候補メモ
-function newCandidate() {
-  return {
-    color: "",
-    number: "",
-    negated: false
-  };
+"use strict";
+const colorList=[{name:"色？",value:"",bg:"#e5e2d9",fg:"#87919a"},{name:"赤",value:"赤",bg:"#e34b4b",fg:"#fff"},{name:"黄",value:"黄",bg:"#e9c84b",fg:"#253442"},{name:"緑",value:"緑",bg:"#48a86a",fg:"#fff"},{name:"青",value:"青",bg:"#4388e8",fg:"#fff"},{name:"白",value:"白",bg:"#fefefe",fg:"#253442"}];
+const numbers=["1","2","3","4","5"];
+const $=id=>document.getElementById(id);
+const publicCards=$("publicCards"),ownCards=$("ownCards"),candidateGrid=$("candidateGrid"),countBtn=$("countBtn"),orientationBtn=$("orientationBtn"),shiftBtn=$("shiftBtn"),undoBtn=$("undoBtn"),redoBtn=$("redoBtn"),resetBtn=$("resetBtn"),selectedLabel=$("selectedLabel"),pickerPopup=$("pickerPopup");
+let count=5,orientationMode="number",selectedIndex=0,hand=Array.from({length:5},newCard),candidates=Array.from({length:5},newCandidate),undoHistory=[],redoHistory=[],editTimer=null,editSessionActive=false,editStartSnapshot=null,animationTick=0,openPicker=null;
+function newCard(){return {color:"",number:""}}
+function newCandidate(){return {colors:[],numbers:[],negated:false}}
+function cloneHand(cards){return cards.map(c=>({...c}))}
+function updateHistoryButtons(){undoBtn.disabled=!undoHistory.length;redoBtn.disabled=!redoHistory.length}
+function saveUndo(){undoHistory.push({hand:cloneHand(hand),candidates:candidates.map(c=>({...c,colors:[...c.colors],numbers:[...c.numbers]})),selectedIndex,includesCandidates:true});if(undoHistory.length>2)undoHistory.shift();redoHistory=[];updateHistoryButtons()}
+function beginEditSession(){if(!editSessionActive){editStartSnapshot={hand:cloneHand(hand),selectedIndex};editSessionActive=true}if(editTimer!==null)clearTimeout(editTimer);editTimer=setTimeout(commitEditSession,5000)}
+function commitEditSession(){if(editTimer!==null){clearTimeout(editTimer);editTimer=null}if(editSessionActive&&editStartSnapshot){undoHistory.push(editStartSnapshot);if(undoHistory.length>2)undoHistory.shift();redoHistory=[]}editSessionActive=false;editStartSnapshot=null;updateHistoryButtons()}
+function endEditSession(){commitEditSession()}
+function closePicker(){pickerPopup.hidden=true;pickerPopup.innerHTML="";openPicker=null}
+function positionPicker(anchor){pickerPopup.hidden=false;const r=anchor.getBoundingClientRect(),p=pickerPopup.getBoundingClientRect(),m=8;let left=Math.max(m,Math.min(r.left,innerWidth-p.width-m)),top=r.bottom+5;if(top+p.height>innerHeight-m)top=r.top-p.height-5;top=Math.max(m,Math.min(top,innerHeight-p.height-m));pickerPopup.style.left=left+"px";pickerPopup.style.top=top+"px"}
+function updatePickerSummaryButtons(){document.querySelectorAll(".candidate-picker").forEach(b=>{const c=candidates[+b.dataset.index],vals=b.dataset.kind==="colors"?c.colors:c.numbers,s=b.querySelector(".picker-summary");s.textContent=vals.length?vals.join("・"):(b.dataset.kind==="colors"?"色を選択":"数字を選択")})}
+function openCandidatePicker(anchor,index,kind){
+ if(openPicker&&openPicker.anchor===anchor){closePicker();return}closePicker();openPicker={anchor,index,kind};const c=candidates[index],isColor=kind==="colors",opts=isColor?colorList.slice(1):numbers,selected=isColor?c.colors:c.numbers;
+ const title=document.createElement("div");title.className="picker-title";title.textContent=`${index+1}枚目：${isColor?"候補色":"候補数字"}`;
+ const list=document.createElement("div");list.className="picker-list";
+ opts.forEach(item=>{const value=isColor?item.value:item,labelText=isColor?item.name:item,row=document.createElement("label");row.className="picker-item";const cb=document.createElement("input");cb.type="checkbox";cb.checked=selected.includes(value);cb.addEventListener("change",()=>{const arr=isColor?c.colors:c.numbers;if(cb.checked){if(!arr.includes(value))arr.push(value)}else if(isColor)c.colors=c.colors.filter(v=>v!==value);else c.numbers=c.numbers.filter(v=>v!==value);updatePickerSummaryButtons();renderHands()});if(isColor){const sw=document.createElement("span");sw.className="picker-swatch";sw.style.background=item.bg;if(item.value==="白")sw.style.borderColor="#aab3bb";row.append(cb,sw,document.createTextNode(labelText))}else row.append(cb,document.createTextNode(labelText));list.appendChild(row)});
+ const footer=document.createElement("div");footer.className="picker-footer";const clear=document.createElement("button");clear.textContent="全解除";clear.onclick=()=>{if(isColor)c.colors=[];else c.numbers=[];list.querySelectorAll("input").forEach(i=>i.checked=false);updatePickerSummaryButtons();renderHands()};const done=document.createElement("button");done.className="primary";done.textContent="閉じる";done.onclick=closePicker;footer.append(clear,done);pickerPopup.append(title,list,footer);positionPicker(anchor)
 }
-
-let candidates = Array.from(
-  { length: count },
-  newCandidate
-);
-
-const candidateGrid = document.getElementById("candidateGrid");
-const redoBtn = document.getElementById("redoBtn");
-
-let redoHistory = [];
-
-/* ずらす処理のやり直し履歴。直近2回分だけ保存する。 */
-let undoHistory = [];
-
-function newCard() {
-  return { color: "", number: "" };
+function makeCard(index,isOwn){
+ const d=hand[index],c=candidates[index]||newCandidate(),cols=d.color?[d.color]:c.colors,nums=d.number?[d.number]:c.numbers,card=document.createElement("div");card.className="card";
+ let bg="#f5f2e9",fg="#253442";
+ if(d.color){const x=colorList.find(v=>v.value===d.color);if(x){bg=x.bg;fg=x.fg}}
+ else if(cols.length){const valid=cols.map(v=>colorList.find(x=>x.value===v)).filter(Boolean);if(valid.length===1){bg=valid[0].bg;fg=valid[0].fg}else if(valid.length>1){bg="linear-gradient(to right,"+valid.map((x,i)=>`${x.bg} ${(i/valid.length*100).toFixed(2)}% ${((i+1)/valid.length*100).toFixed(2)}%`).join(",")+")";fg="#17212b"}}
+ card.style.setProperty("--card-bg",bg);card.style.color=fg;
+ const n=document.createElement("div");n.className="number";
+ if(d.number)n.textContent=d.number;
+ else if(nums.length){n.classList.add("animated-number");n.dataset.values=nums.join(",");n.textContent=nums[animationTick%nums.length];n.title="候補数字："+nums.join("、");if(nums.length>=4)n.style.fontSize="clamp(11px,3.4vw,18px)";else if(nums.length>=2)n.style.fontSize="clamp(17px,5vw,26px)"}
+ else{n.textContent="?";n.classList.add("unknown")}
+ const cn=document.createElement("div");cn.className="color-name";
+ if(d.color)cn.textContent=d.color;else if(cols.length){cn.textContent=cols.map(v=>(colorList.find(x=>x.value===v)||{}).name||"").join("");cn.title="候補色："+cols.join("、");if(cols.length>=3)cn.style.fontSize="8px";if(cols.length>=4)cn.style.fontSize="6px"}else cn.textContent="不明";
+ card.append(n,cn);if(!isOwn)return card;
+ const wrap=document.createElement("div");wrap.className="own-card";if(selectedIndex===index){wrap.classList.add("selected");card.classList.add("selected-card")}
+ card.title="タップして補充対象を選択";card.onclick=()=>{selectedIndex=index;render()};
+ const cs=document.createElement("select");cs.className="color-select";cs.setAttribute("aria-label",`カード${index+1}の色`);colorList.forEach(x=>{const o=document.createElement("option");o.value=x.value;o.textContent=x.name;o.selected=x.value===d.color;cs.appendChild(o)});cs.onchange=()=>{beginEditSession();hand[index].color=cs.value;render()};
+ const ns=document.createElement("select");ns.setAttribute("aria-label",`カード${index+1}の数字`);["",...numbers].forEach(x=>{const o=document.createElement("option");o.value=x;o.textContent=x||"不明";o.selected=x===d.number;ns.appendChild(o)});ns.onchange=()=>{beginEditSession();hand[index].number=ns.value;render()};
+ wrap.append(card,cs,ns);return wrap
 }
-
-function cloneHand(cards) {
-  return cards.map(card => ({ ...card }));
+function renderHands(){publicCards.innerHTML="";ownCards.innerHTML="";for(let i=0;i<count;i++){publicCards.appendChild(makeCard(i,false));ownCards.appendChild(makeCard(i,true))}publicCards.classList.toggle("number-flipped",orientationMode==="number");publicCards.classList.toggle("card-flipped",orientationMode==="card");orientationBtn.textContent=orientationMode==="number"?"数字のみ反転":"180度回転中";countBtn.textContent=count+"枚";selectedLabel.textContent=`選択中：${selectedIndex+1}枚目`;shiftBtn.disabled=count<1;updateHistoryButtons()}
+function renderCandidates(){candidateGrid.innerHTML="";candidateGrid.style.gridTemplateColumns=`repeat(${count},minmax(0,1fr))`;candidates=candidates.slice(0,count);while(candidates.length<count)candidates.push(newCandidate());
+ candidates.forEach((c,i)=>{const slot=document.createElement("div");slot.className="candidate-slot"+(c.negated?" is-negated":"");const label=document.createElement("div");label.className="candidate-label";label.textContent=(i+1)+"枚目";
+ const cb=document.createElement("button");cb.className="candidate-picker";cb.dataset.index=i;cb.dataset.kind="colors";cb.setAttribute("aria-haspopup","dialog");cb.innerHTML='<span class="picker-summary"></span><span class="picker-arrow">▼</span>';cb.querySelector(".picker-summary").textContent=c.colors.length?c.colors.join("・"):"色を選択";cb.onclick=()=>openCandidatePicker(cb,i,"colors");
+ const nb=document.createElement("button");nb.className="candidate-picker";nb.dataset.index=i;nb.dataset.kind="numbers";nb.setAttribute("aria-haspopup","dialog");nb.innerHTML='<span class="picker-summary"></span><span class="picker-arrow">▼</span>';nb.querySelector(".picker-summary").textContent=c.numbers.length?c.numbers.join("・"):"数字を選択";nb.onclick=()=>openCandidatePicker(nb,i,"numbers");
+ const neg=document.createElement("button");neg.className="negate-btn";neg.textContent=c.negated?"× 否定中":"× 否定";neg.setAttribute("aria-pressed",String(c.negated));neg.onclick=()=>{c.negated=!c.negated;renderCandidates()};slot.append(label,cb,nb,neg);candidateGrid.appendChild(slot)})
 }
-
-
-function saveUndo() {
-  undoHistory.push({
-    hand: cloneHand(hand),
-    selectedIndex
-  });
-
-  if (undoHistory.length > 2) {
-    undoHistory.shift();
-  }
-
-  redoHistory = [];
-  updateHistoryButtons();
-}
-
-/* 色・数字の編集を5秒単位でまとめる */
-let editTimer = null;
-let editSessionActive = false;
-let editStartSnapshot = null;
-
-function beginEditSession() {
-  // 編集グループの開始時点だけ保存
-  if (!editSessionActive) {
-    editStartSnapshot = {
-      hand: cloneHand(hand),
-      selectedIndex
-    };
-
-    editSessionActive = true;
-  }
-
-  if (editTimer !== null) {
-    clearTimeout(editTimer);
-  }
-
-  editTimer = setTimeout(() => {
-    commitEditSession();
-  }, 5000);
-}
-
-/* 編集グループを履歴へ確定 */
-function commitEditSession() {
-  if (editTimer !== null) {
-    clearTimeout(editTimer);
-    editTimer = null;
-  }
-
-  if (editSessionActive && editStartSnapshot) {
-    undoHistory.push(editStartSnapshot);
-
-    if (undoHistory.length > 2) {
-      undoHistory.shift();
-    }
-
-    // 新しい操作が確定したため、再実行履歴を破棄
-    redoHistory = [];
-  }
-
-  editSessionActive = false;
-  editStartSnapshot = null;
-
-  updateHistoryButtons();
-}
-
-/* 独立した操作の直前に呼び、編集を先に確定 */
-function endEditSession() {
-  commitEditSession();
-}
-
-function updateHistoryButtons() {
-  undoBtn.disabled = undoHistory.length === 0;
-  redoBtn.disabled = redoHistory.length === 0;
-}
-
-function createSelect(items, value, label, change) {
-  const select = document.createElement("select");
-  select.setAttribute("aria-label", label);
-
-  items.forEach(item => {
-    const option = document.createElement("option");
-    option.value = item.value;
-    option.textContent = item.label;
-    option.selected = item.value === value;
-    select.appendChild(option);
-  });
-
-  select.addEventListener("change", () => change(select.value));
-  return select;
-}
-
-function makeCard(index, isOwn) {
-  const data = hand[index];
-  const color = colorList.find(c => c.value === data.color)
-    || colorList[0];
-
-  const card = document.createElement("div");
-  card.className = "card";
-  card.style.background = color.bg;
-  card.style.color = color.fg;
-
-  const number = document.createElement("div");
-  number.className = "number" + (!data.number ? " unknown" : "");
-  number.textContent = data.number || "?";
-
-  const colorName = document.createElement("div");
-  colorName.className = "color-name";
-  colorName.textContent = data.color || "不明";
-
-  card.append(number, colorName);
-
-  if (!isOwn) return card;
-
-  const wrap = document.createElement("div");
-  wrap.className = "own-card";
-  if (selectedIndex === index) wrap.classList.add("selected");
-
-  if (selectedIndex === index) {
-    card.classList.add("selected-card");
-  }
-
-  card.title = "タップして補充対象を選択";
-  card.addEventListener("click", () => {
-    selectedIndex = index;
-    render();
-  });
-
-  const colorSelect = createSelect(
-    colorList.map(c => ({ value: c.value, label: c.name })),
-    data.color,
-    `カード${index + 1}の色`,
-    
-    value => {
-      beginEditSession();
-      hand[index].color = value;
-      render();
-    }
-  );
-  colorSelect.className = "color-select";
-
-  const numberSelect = createSelect(
-    numbers.map(n => ({
-      value: n,
-      label: n || "不明"
-    })),
-    data.number,
-    `カード${index + 1}の数字`,
-    value => {
-      beginEditSession();
-      hand[index].number = value;
-      render();
-    }
-  );
-
-
-  wrap.append(card, colorSelect, numberSelect);
-  return wrap;
-}
-
-function render() {
-  publicCards.innerHTML = "";
-  ownCards.innerHTML = "";
-
-  for (let i = 0; i < count; i++) {
-    publicCards.appendChild(makeCard(i, false));
-    ownCards.appendChild(makeCard(i, true));
-  }
-
-  publicCards.classList.toggle(
-    "number-flipped",
-    orientationMode === "number"
-  );
-  publicCards.classList.toggle(
-    "card-flipped",
-    orientationMode === "card"
-  );
-
-  orientationBtn.textContent =
-    orientationMode === "number"
-      ? "数字のみ反転"
-      : "180度回転中";
-
-  countBtn.textContent = count + "枚";
-  selectedLabel.textContent = `選択中：${selectedIndex + 1}枚目`;
-
-  shiftBtn.disabled = count < 1;
-  undoBtn.disabled = undoHistory.length === 0;
-  redoBtn.disabled = redoHistory.length === 0;
-
-renderCandidates();
-}
-
-/*
- * 表示切り替え：
- * 「数字のみ反転」→「カード全体を180度回転」→「数字のみ反転」
- */
-orientationBtn.addEventListener("click", () => {
-  orientationMode =
-    orientationMode === "number" ? "card" : "number";
-  render();
-});
-
-countBtn.addEventListener("click", () => {
-  endEditSession();
-
-  // 5枚 → 4枚 → 3枚 → 5枚 と切り替える
-  count = count === 5 ? 4 : count === 4 ? 3 : 5;
-
-  // 手札の枚数を調整する
-  hand = hand.slice(0, count);
-
-  while (hand.length < count) {
-    hand.push(newCard());
-  }
-
-  // 候補メモの枚数も調整する
-  candidates = candidates.slice(0, count);
-
-  while (candidates.length < count) {
-    candidates.push(newCandidate());
-  }
-
-  // 枚数変更前の履歴は使用しない
-  undoHistory = [];
-  redoHistory = [];
-
-  // 選択位置が枚数を超えないようにする
-  selectedIndex = Math.min(selectedIndex, count - 1);
-
-  render();
-});
-
-shiftBtn.addEventListener("click", () => {
-  endEditSession();
-
-  if (!hand.length) return;
-
-  /* 変更前の手札と選択位置を保存。最大2回分。 */
-  saveUndo();
-
-  // 選択したカードを取り除く
-  hand.splice(selectedIndex, 1);
-
-  /*
-   * ★★★ 補充位置を変更する場合は、ここを編集 ★★★
-   *
-   * 現在：新しいカードを右端に補充
-   * 下の hand.push(newCard()); が有効な処理です。
-   */
-  hand.push(newCard());
-
-  /*
-   * 左端に補充したい場合：
-   * 1. 上の hand.push(newCard()); をコメントアウトする
-   * 2. 下の hand.unshift(newCard()); のコメントを外す
-   *
-   * hand.unshift(newCard());
-   *
-   * push = 右端に追加
-   * unshift = 左端に追加
-   * 2行を同時に有効にしないでください。
-   */
-
-  selectedIndex = Math.min(selectedIndex, hand.length - 1);
-  render();
-});
-
-/* ずらす処理を直近2回までやり直す */
-undoBtn.addEventListener("click", () => {
-  endEditSession();
-
-  if (undoHistory.length === 0) return;
-
-  // 現在の状態を再実行履歴へ保存
-  redoHistory.push({
-    hand: cloneHand(hand),
-    selectedIndex
-  });
-
-  const previous = undoHistory.pop();
-  hand = cloneHand(previous.hand);
-  selectedIndex = previous.selectedIndex;
-
-  render();
-});
-
-/* やり直しで戻した操作を再実行する */
-redoBtn.addEventListener("click", () => {
-  endEditSession();
-
-  if (redoHistory.length === 0) return;
-
-  // 現在の状態をやり直し履歴へ保存
-  undoHistory.push({
-    hand: cloneHand(hand),
-    selectedIndex
-  });
-
-  if (undoHistory.length > 2) {
-    undoHistory.shift();
-  }
-
-  const next = redoHistory.pop();
-  hand = cloneHand(next.hand);
-  selectedIndex = next.selectedIndex;
-
-  render();
-});
-
-resetBtn.addEventListener("click", () => {
-  endEditSession();
-
-  hand = Array.from({ length: count }, newCard);
-  candidates = Array.from({ length: count }, newCandidate);
-
-  selectedIndex = 0;
-  undoHistory = [];
-  redoHistory = [];
-
-  render();
-});
-
-document
-  .getElementById("clearCandidates")
-  .addEventListener("click", () => {
-    candidates = Array.from(
-      { length: count },
-      newCandidate
-    );
-
-    renderCandidates();
-  });
-
-
-
-/* 画面の高さに合わせて表示を調整 */
-const root = document.documentElement;
-
-function updateLayout() {
-  const viewport = window.visualViewport;
-  const visibleHeight = viewport
-    ? viewport.height
-    : window.innerHeight;
-
-  // 戻るボタンは .app の中にあるため、
-  // ボタンの高さを別途差し引かない
-  root.style.setProperty(
-    "--app-height",
-    `${Math.max(visibleHeight, 200)}px`
-  );
-
-  // 自由入力欄はなくなったため、キーボード用余白は不要
-  root.style.setProperty("--keyboard-space", "0px");
-}
-
-window.addEventListener("resize", updateLayout);
-
-if (window.visualViewport) {
-  window.visualViewport.addEventListener("resize", updateLayout);
-}
-
-updateLayout();
-
-
-function renderCandidates() {
-  candidateGrid.innerHTML = "";
-  candidateGrid.style.gridTemplateColumns =
-    `repeat(${count}, minmax(0, 1fr))`;
-
-  candidates = candidates.slice(0, count);
-
-  while (candidates.length < count) {
-    candidates.push(newCandidate());
-  }
-
-  candidates.forEach((candidate, index) => {
-    const slot = document.createElement("div");
-    slot.className = "candidate-slot";
-
-    if (candidate.negated) {
-      slot.classList.add("is-negated");
-    }
-
-    const label = document.createElement("div");
-    label.className = "candidate-label";
-    label.textContent = `${index + 1}枚目`;
-
-    const colorSelect = createSelect(
-      colorList.map(c => ({
-        value: c.value,
-        label: c.name
-      })),
-      candidate.color,
-      `${index + 1}枚目の候補色`,
-      value => {
-        candidate.color = value;
-      }
-    );
-
-    const numberSelect = createSelect(
-      numbers.map(n => ({
-        value: n,
-        label: n || "不明"
-      })),
-      candidate.number,
-      `${index + 1}枚目の候補数字`,
-      value => {
-        candidate.number = value;
-      }
-    );
-
-    const negateBtn = document.createElement("button");
-    negateBtn.className = "negate-btn";
-    negateBtn.textContent = candidate.negated ? "× 否定中" : "× 否定";
-    negateBtn.setAttribute(
-      "aria-pressed",
-      String(candidate.negated)
-    );
-
-    negateBtn.addEventListener("click", () => {
-      candidate.negated = !candidate.negated;
-      renderCandidates();
-    });
-
-    slot.append(
-      label,
-      colorSelect,
-      numberSelect,
-      negateBtn
-    );
-
-    candidateGrid.appendChild(slot);
-  });
-}
-
-
-render();
-</script>
-</body>
-</html>
+function render(){closePicker();renderHands();renderCandidates()}
+orientationBtn.onclick=()=>{orientationMode=orientationMode==="number"?"card":"number";renderHands()};
+countBtn.onclick=()=>{endEditSession();count=count===5?4:count===4?3:5;hand=hand.slice(0,count);while(hand.length<count)hand.push(newCard());candidates=candidates.slice(0,count);while(candidates.length<count)candidates.push(newCandidate());undoHistory=[];redoHistory=[];selectedIndex=Math.min(selectedIndex,count-1);render()};
+shiftBtn.onclick=()=>{endEditSession();if(!hand.length)return;saveUndo();hand.splice(selectedIndex,1);hand.push(newCard());candidates.splice(selectedIndex,1);candidates.push(newCandidate());/* 左端補充に変更する場合は push を unshift に変更 */selectedIndex=Math.min(selectedIndex,hand.length-1);render()};
+undoBtn.onclick=()=>{endEditSession();if(!undoHistory.length)return;redoHistory.push({hand:cloneHand(hand),selectedIndex});const p=undoHistory.pop();hand=cloneHand(p.hand);if(p.includesCandidates&&p.candidates)candidates=p.candidates.map(c=>({...c,colors:[...c.colors],numbers:[...c.numbers]}));selectedIndex=p.selectedIndex;render()};
+redoBtn.onclick=()=>{endEditSession();if(!redoHistory.length)return;const n=redoHistory.pop();undoHistory.push({hand:cloneHand(hand),...(n.includesCandidates?{candidates:candidates.map(c=>({...c,colors:[...c.colors],numbers:[...c.numbers]})),includesCandidates:true}:{}),selectedIndex});if(undoHistory.length>2)undoHistory.shift();hand=cloneHand(n.hand);if(n.includesCandidates&&n.candidates)candidates=n.candidates.map(c=>({...c,colors:[...c.colors],numbers:[...c.numbers]}));selectedIndex=n.selectedIndex;render()};
+resetBtn.onclick=()=>{endEditSession();hand=Array.from({length:count},newCard);candidates=Array.from({length:count},newCandidate);selectedIndex=0;undoHistory=[];redoHistory=[];render()};
+$("clearCandidates").onclick=()=>{candidates=Array.from({length:count},newCandidate);render()};
+document.addEventListener("pointerdown",e=>{if(openPicker&&!pickerPopup.contains(e.target)&&!openPicker.anchor.contains(e.target))closePicker()});
+window.addEventListener("resize",()=>{if(openPicker&&!pickerPopup.hidden)positionPicker(openPicker.anchor)});
+window.addEventListener("scroll",()=>{if(openPicker&&!pickerPopup.hidden)positionPicker(openPicker.anchor)},true);
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closePicker()});
+setInterval(()=>{animationTick++;document.querySelectorAll(".animated-number").forEach(el=>{const vals=(el.dataset.values||"").split(",").filter(Boolean);if(vals.length)el.textContent=vals[animationTick%vals.length]})},1000);
+const root=document.documentElement;function updateLayout(){const v=window.visualViewport;root.style.setProperty("--app-height",Math.max(v?v.height:innerHeight,200)+"px")}window.addEventListener("resize",updateLayout);if(window.visualViewport)window.visualViewport.addEventListener("resize",updateLayout);updateLayout();render();
+</script></body></html>
